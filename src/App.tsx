@@ -65,7 +65,9 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
         <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-800 capitalize">{activeTab.replace('_', ' ')}</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            {activeTab === 'golden' ? 'Booking list' : <span className="capitalize">{activeTab.replace('_', ' ')}</span>}
+          </h1>
           <div className="flex items-center space-x-4">
             <input 
               type="text" 
