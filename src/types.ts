@@ -16,6 +16,7 @@ export type Ticket = {
   pdfUrl: string;
   status: 'received' | 'missing';
   confidenceScore: number;
+  passengerName: string;
 };
 
 export type Transaction = {
@@ -24,15 +25,21 @@ export type Transaction = {
   amount: number;
   currency: string;
   description: string;
-  source: 'Revolut';
+  source: 'Revolut' | 'Fareharbor' | 'Gmail';
   bookingId?: string;
 };
 
 export type GoldenRecord = {
-  id: string;
+  id: string; // This will be the ticket ID or a combined ID
   booking: Booking;
-  ticket?: Ticket;
+  ticket: Ticket;
   transaction?: Transaction;
   overallStatus: ReconciliationStatus;
   confidence: number;
+};
+
+export type RawData = {
+  fareharbor: any[];
+  revolut: any[];
+  gmail: any[];
 };
