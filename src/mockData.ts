@@ -1,7 +1,6 @@
 import type { GoldenRecord, Booking, Ticket, Transaction, RawData } from './types';
 
 const customers = ['Marco Rossi', 'Giulia Bianchi', 'Luca Verdi', 'Elena Neri', 'Alessandro Gallo', 'Sofia Conti'];
-const descriptions = ['TICKET FLIGHT ROM-MIL', 'TRAIN TICKET IT-772', 'BUS TRANSFER VCE', 'FERRY TICKET NAP-CAP'];
 
 export const generateMockData = (): GoldenRecord[] => {
   const records: GoldenRecord[] = [];
