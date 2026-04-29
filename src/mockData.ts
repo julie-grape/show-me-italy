@@ -1,16 +1,16 @@
-import type { GoldenRecord, Booking, Ticket, Transaction, RawData } from './types';
+import type { GoldenRecord, Booking, Transaction, RawData } from './types';
 
 const customers = ['Marco Rossi', 'Giulia Bianchi', 'Luca Verdi', 'Elena Neri', 'Alessandro Gallo', 'Sofia Conti'];
 
 export const generateMockData = (): GoldenRecord[] => {
   const records: GoldenRecord[] = [];
 
-  for (let i = 1; i <= 20; i++) {
+  // Generate some matched records
+  for (let i = 1; i <= 12; i++) {
     const bookingId = `BK-${2000 + i}`;
     const date = new Date(2024, 3, Math.floor(Math.random() * 28) + 1).toISOString().split('T')[0];
     const baseAmount = parseFloat((Math.random() * 200 + 50).toFixed(2));
-    
-    const numTickets = Math.floor(Math.random() * 3) + 1; // 1 to 3 tickets per booking
+    const numTickets = Math.floor(Math.random() * 2) + 1;
 
     const booking: Booking = {
       id: bookingId,
@@ -33,27 +33,148 @@ export const generateMockData = (): GoldenRecord[] => {
 
     for (let t = 1; t <= numTickets; t++) {
       const ticketId = `TK-${4000 + i}-${t}`;
-      const status: GoldenRecord['overallStatus'] = Math.random() > 0.1 ? 'matched' : 'manual_review';
-      
-      const ticket: Ticket = {
-        id: ticketId,
-        bookingId: bookingId,
-        receivedDate: date,
-        pdfUrl: '#',
-        status: status === 'matched' ? 'received' : 'missing',
-        confidenceScore: status === 'matched' ? 98 : 45,
-        passengerName: `${booking.customer} ${t > 1 ? `(Pax ${t})` : ''}`.trim(),
-      };
-
       records.push({
         id: ticketId,
         booking,
-        ticket,
+        ticket: {
+          id: ticketId,
+          bookingId,
+          receivedDate: date,
+          pdfUrl: '#',
+          status: 'received',
+          confidenceScore: 98 + Math.random(),
+          passengerName: `${booking.customer} ${t > 1 ? `(Pax ${t})` : ''}`.trim(),
+        },
         transaction,
-        overallStatus: status,
-        confidence: status === 'matched' ? 98 : 45,
+        overallStatus: 'matched',
+        confidence: 98 + Math.random(),
       });
     }
+  }
+
+  // Add "PDF Ticket Missing" (2 items)
+  for (let i = 1; i <= 2; i++) {
+    const bookingId = `BK-300${i}`;
+    const date = '2024-04-10';
+    const booking: Booking = {
+      id: bookingId,
+      date,
+      customer: customers[i % customers.length],
+      amount: 150.00,
+      currency: 'EUR',
+      status: 'confirmed',
+    };
+    const ticketId = `TK-500${i}`;
+    records.push({
+      id: ticketId,
+      booking,
+      ticket: {
+        id: ticketId,
+        bookingId,
+        receivedDate: date,
+        pdfUrl: '#',
+        status: 'missing',
+        confidenceScore: 0,
+        passengerName: `${booking.customer}`,
+      },
+      overallStatus: 'manual_review',
+      issueType: 'pdf_missing',
+      confidence: 45,
+    });
+  }
+
+  // Add "Unmatched Purchase" (2 items)
+  for (let i = 1; i <= 2; i++) {
+    const bookingId = `BK-400${i}`;
+    const date = '2024-04-12';
+    const booking: Booking = {
+      id: bookingId,
+      date,
+      customer: customers[(i + 2) % customers.length],
+      amount: 85.00,
+      currency: 'EUR',
+      status: 'confirmed',
+    };
+    const ticketId = `TK-600${i}`;
+    records.push({
+      id: ticketId,
+      booking,
+      ticket: {
+        id: ticketId,
+        bookingId,
+        receivedDate: date,
+        pdfUrl: '#',
+        status: 'received',
+        confidenceScore: 95,
+        passengerName: `${booking.customer}`,
+      },
+      transaction: undefined, // Missing transaction
+      overallStatus: 'manual_review',
+      issueType: 'unmatched_purchase',
+      confidence: 30,
+    });
+  }
+
+  // Add "Partially Matched" (2 items)
+  for (let i = 1; i <= 2; i++) {
+    const bookingId = `BK-500${i}`;
+    const date = '2024-04-15';
+    const booking: Booking = {
+      id: bookingId,
+      date,
+      customer: customers[(i + 4) % customers.length],
+      amount: 200.00,
+      currency: 'EUR',
+      status: 'confirmed',
+    };
+    const ticketId = `TK-700${i}`;
+    records.push({
+      id: ticketId,
+      booking,
+      ticket: {
+        id: ticketId,
+        bookingId,
+        receivedDate: date,
+        pdfUrl: '#',
+        status: 'received',
+        confidenceScore: 100,
+        passengerName: `${booking.customer}`,
+      },
+      overallStatus: 'manual_review',
+      issueType: 'partially_matched',
+      confidence: 60,
+    });
+  }
+
+  // Add "Confidence Score Low" (2 items)
+  for (let i = 1; i <= 2; i++) {
+    const bookingId = `BK-600${i}`;
+    const date = '2024-04-18';
+    const booking: Booking = {
+      id: bookingId,
+      date,
+      customer: customers[i % customers.length],
+      amount: 120.00,
+      currency: 'EUR',
+      status: 'confirmed',
+    };
+    const ticketId = `TK-800${i}`;
+    records.push({
+      id: ticketId,
+      booking,
+      ticket: {
+        id: ticketId,
+        bookingId,
+        receivedDate: date,
+        pdfUrl: '#',
+        status: 'received',
+        confidenceScore: 68,
+        passengerName: `${booking.customer}`,
+      },
+      overallStatus: 'manual_review',
+      issueType: 'low_confidence',
+      confidence: 68,
+    });
   }
 
   return records;

@@ -1,4 +1,5 @@
 export type ReconciliationStatus = 'matched' | 'partial' | 'failed' | 'manual_review';
+export type IssueType = 'unmatched_purchase' | 'partially_matched' | 'low_confidence' | 'pdf_missing';
 
 export type Booking = {
   id: string;
@@ -35,11 +36,12 @@ export type GoldenRecord = {
   ticket: Ticket;
   transaction?: Transaction;
   overallStatus: ReconciliationStatus;
+  issueType?: IssueType;
   confidence: number;
 };
 
 export type RawData = {
-  fareharbor: any[];
-  revolut: any[];
-  gmail: any[];
+  fareharbor: Record<string, unknown>[];
+  revolut: Record<string, unknown>[];
+  gmail: Record<string, unknown>[];
 };

@@ -11,13 +11,14 @@ const App: React.FC = () => {
   const [collapsedBookings, setCollapsedBookings] = useState<Set<string>>(new Set());
 
   const stats = useMemo(() => {
-    const totalTickets = data.length;
-    const uniqueBookings = new Set(data.map(r => r.booking.id)).size;
-    const matched = data.filter(r => r.overallStatus === 'matched').length;
-    const rate = (matched / totalTickets) * 100;
+    const inventoryUnits = data.length;
+    const purchasesDetected = rawData.revolut.length;
+    const documentsReceived = rawData.gmail.length;
     const needsReview = data.filter(r => r.overallStatus === 'manual_review').length;
-    return { totalTickets, uniqueBookings, matched, rate, needsReview };
-  }, [data]);
+    const unresolvedPurchases = data.filter(r => r.issueType === 'unmatched_purchase').length;
+    
+    return { inventoryUnits, purchasesDetected, documentsReceived, needsReview, unresolvedPurchases };
+  }, [data, rawData]);
 
   const filteredData = useMemo(() => {
     return data.filter(r => 
@@ -126,25 +127,33 @@ const App: React.FC = () => {
         </header>
 
         {activeTab === 'dashboard' && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="text-slate-500 text-sm mb-1">Automation Rate</div>
-              <div className="text-3xl font-bold text-slate-900">{stats.rate.toFixed(1)}%</div>
-              <div className="mt-4 w-full bg-slate-100 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${stats.rate}%` }}></div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Purchases Detected</div>
+              <div className="text-3xl font-bold text-slate-900">{stats.purchasesDetected}</div>
+              <div className="text-[10px] text-slate-400 mt-1">Revolut Transactions</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Documents Received</div>
+              <div className="text-3xl font-bold text-slate-900">{stats.documentsReceived}</div>
+              <div className="text-[10px] text-slate-400 mt-1">Gmail PDF Parsed</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Ticket Units in Inventory</div>
+              <div className="text-3xl font-bold text-slate-900">{stats.inventoryUnits}</div>
+              <div className="text-[10px] text-slate-400 mt-1">Total Atomic Units</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Unresolved Purchases</div>
+              <div className={`text-3xl font-bold ${stats.unresolvedPurchases > 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                {stats.unresolvedPurchases}
               </div>
+              <div className="text-[10px] text-slate-400 mt-1">No match found</div>
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="text-slate-500 text-sm mb-1">Total Tickets</div>
-              <div className="text-3xl font-bold text-slate-900">{stats.totalTickets}</div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="text-slate-500 text-sm mb-1">Total Bookings</div>
-              <div className="text-3xl font-bold text-slate-900">{stats.uniqueBookings}</div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-              <div className="text-slate-500 text-sm mb-1">Manual Review</div>
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Manual Review</div>
               <div className="text-3xl font-bold text-orange-600">{stats.needsReview}</div>
+              <div className="text-[10px] text-slate-400 mt-1">Action required</div>
             </div>
           </div>
         )}
@@ -245,38 +254,67 @@ const App: React.FC = () => {
                 ✨ All tickets are reconciled! No items in queue.
               </div>
             ) : (
-              reviewQueue.map(record => (
-                <div key={record.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
-                  <div className="flex space-x-8">
-                    <div>
-                      <div className="text-xs text-slate-500 uppercase font-bold mb-1">Ticket / Passenger</div>
-                      <div className="font-semibold">{record.ticket.passengerName}</div>
-                      <div className="text-sm text-slate-500">Booking: {record.booking.id}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500 uppercase font-bold mb-1">Issue</div>
-                      <div className="text-orange-600 font-semibold text-sm">
-                        {record.ticket.status === 'missing' ? 'PDF Ticket Missing' : 'Low Confidence Match'}
+              reviewQueue.map(record => {
+                let issueLabel: string;
+                let issueColor: string;
+                
+                switch (record.issueType) {
+                  case 'unmatched_purchase':
+                    issueLabel = 'Unmatched Purchase';
+                    issueColor = 'text-red-600';
+                    break;
+                  case 'partially_matched':
+                    issueLabel = 'Partially Matched';
+                    issueColor = 'text-orange-600';
+                    break;
+                  case 'low_confidence':
+                    issueLabel = 'Confidence Score Low';
+                    issueColor = 'text-yellow-600';
+                    break;
+                  case 'pdf_missing':
+                  default:
+                    issueLabel = 'PDF Ticket Missing';
+                    issueColor = 'text-orange-600';
+                    break;
+                }
+
+                return (
+                  <div key={record.id} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div className="flex space-x-8">
+                      <div>
+                        <div className="text-xs text-slate-500 uppercase font-bold mb-1">Passenger</div>
+                        <div className="font-semibold">{record.ticket.passengerName}</div>
+                        <div className="text-xs text-slate-400">ID: {record.id}</div>
                       </div>
-                      <div className="text-[10px] text-slate-400">Detected: {record.ticket.receivedDate}</div>
+                      <div>
+                        <div className="text-xs text-slate-500 uppercase font-bold mb-1">Booking ID</div>
+                        <div className="font-mono text-sm text-blue-600 font-semibold">{record.booking.id}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500 uppercase font-bold mb-1">Issue Type</div>
+                        <div className={`${issueColor} font-bold text-sm`}>
+                          {issueLabel}
+                        </div>
+                        <div className="text-[10px] text-slate-400">Detected: {record.ticket.receivedDate}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <button 
+                        onClick={() => handleResolve(record.id)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                      >
+                        Approve Manual
+                      </button>
+                      <button 
+                        onClick={() => handleFlag(record.id)}
+                        className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-200 transition"
+                      >
+                        Investigate Raw Data
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <button 
-                      onClick={() => handleResolve(record.id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
-                    >
-                      Approve Manual
-                    </button>
-                    <button 
-                      onClick={() => handleFlag(record.id)}
-                      className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-200 transition"
-                    >
-                      Investigate Raw Data
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
