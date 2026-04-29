@@ -40,8 +40,34 @@ export type GoldenRecord = {
   confidence: number;
 };
 
+export interface FareharborData {
+  id: string;
+  booking_id: string;
+  customer_name: string;
+  total_paid: number;
+  status: string;
+  timestamp: string;
+}
+
+export interface RevolutData {
+  id: string;
+  reference: string;
+  amount: number;
+  currency: string;
+  state: string;
+  created_at: string;
+}
+
+export interface GmailData {
+  id: string;
+  subject: string;
+  from: string;
+  date: string;
+  snippet: string;
+}
+
 export type RawData = {
-  fareharbor: Record<string, unknown>[];
-  revolut: Record<string, unknown>[];
-  gmail: Record<string, unknown>[];
+  fareharbor: FareharborData[];
+  revolut: RevolutData[];
+  gmail: GmailData[];
 };
