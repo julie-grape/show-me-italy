@@ -235,7 +235,7 @@ const App: React.FC = () => {
                         </td>
                         <td className="p-4 text-right">
                           <div className="text-sm font-semibold" style={{ color: record.confidence > 90 ? '#10b981' : record.confidence > 70 ? '#f59e0b' : '#ef4444' }}>
-                            {record.confidence}%
+                            {record.confidence.toFixed(1)}%
                           </div>
                         </td>
                       </tr>
